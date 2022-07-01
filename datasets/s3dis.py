@@ -29,9 +29,12 @@ class _S3DISDataset(Dataset):
         # mapping batch index to corresponding file
         areas = []
         if self.split == 'train':
-            for a in range(1, 7):
-                if a != self.holdout_area:
-                    areas.append(os.path.join(self.root, f'Area_{a}'))
+            areas.extend(
+                os.path.join(self.root, f'Area_{a}')
+                for a in range(1, 7)
+                if a != self.holdout_area
+            )
+
         else:
             areas.append(os.path.join(self.root, f'Area_{self.holdout_area}'))
 
@@ -50,8 +53,7 @@ class _S3DISDataset(Dataset):
                     h5f = h5py.File(current_file, 'r')
                     num_windows = h5f['data'].shape[0]
                     self.num_scene_windows += num_windows
-                    for i in range(num_windows):
-                        index_to_filename.append(current_file)
+                    index_to_filename.extend(current_file for _ in range(num_windows))
                     scene_list[current_scene].append(current_file)
         self.index_to_filename = index_to_filename
         self.filename_to_start_index = filename_to_start_index
@@ -67,14 +69,11 @@ class _S3DISDataset(Dataset):
             scene_data = h5f['data']
             scene_label = h5f['label_seg']
             scene_num_points = h5f['data_num']
-            if len(self.cache.keys()) < self.cache_size:
-                self.cache[filename] = (scene_data, scene_label, scene_num_points)
-            else:
+            if len(self.cache.keys()) >= self.cache_size:
                 victim_idx = np.random.randint(0, self.cache_size)
-                cache_keys = list(self.cache.keys())
-                cache_keys.sort()
+                cache_keys = sorted(self.cache.keys())
                 self.cache.pop(cache_keys[victim_idx])
-                self.cache[filename] = (scene_data, scene_label, scene_num_points)
+            self.cache[filename] = (scene_data, scene_label, scene_num_points)
         else:
             scene_data, scene_label, scene_num_points = self.cache[filename]
 
@@ -88,10 +87,7 @@ class _S3DISDataset(Dataset):
         data = current_window_data[choices, ...].transpose()
         label = current_window_label[choices]
         # data[9, num_points] = [x_in_block, y_in_block, z_in_block, r, g, b, x / x_room, y / y_room, z / z_room]
-        if self.with_normalized_coords:
-            return data, label
-        else:
-            return data[:-3, :], label
+        return (data, label) if self.with_normalized_coords else (data[:-3, :], label)
 
 
 class S3DIS(dict):

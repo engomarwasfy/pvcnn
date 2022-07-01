@@ -11,11 +11,10 @@ __all__ = ['eval_from_files']
 
 
 def get_label_annotation(label_path):
-    annotations = dict()
     with open(label_path, 'r') as f:
         lines = f.readlines()
     content = [line.strip().split(' ') for line in lines]
-    annotations['name'] = np.array([x[0] for x in content])
+    annotations = {'name': np.array([x[0] for x in content])}
     annotations['truncated'] = np.array([float(x[1]) for x in content])
     annotations['occluded'] = np.array([int(x[2]) for x in content])
     annotations['alpha'] = np.array([float(x[3]) for x in content])
@@ -25,7 +24,7 @@ def get_label_annotation(label_path):
         [[float(info) for info in x[8:11]] for x in content]).reshape(-1, 3)[:, [2, 0, 1]]
     annotations['location'] = np.array([[float(info) for info in x[11:14]] for x in content]).reshape(-1, 3)
     annotations['rotation_y'] = np.array([float(x[14]) for x in content]).reshape(-1)
-    if len(content) != 0 and len(content[0]) == 16:  # have score
+    if content and len(content[0]) == 16:  # have score
         annotations['score'] = np.array([float(x[15]) for x in content])
     else:
         annotations['score'] = np.zeros([len(annotations['bbox'])])
@@ -45,7 +44,7 @@ def get_label_annotations(label_folder, image_ids=None):
     label_folder = pathlib.Path(label_folder)
     for idx in image_ids:
         image_idx = f'{idx:06d}'
-        label_filename = label_folder / (image_idx + '.txt')
+        label_filename = label_folder / f'{image_idx}.txt'
         annotations.append(get_label_annotation(label_filename))
     return annotations
 

@@ -207,10 +207,7 @@ def clean_data(gt_anno, dt_anno, current_class, difficulty):
         if gt_anno['name'][i] == 'DontCare':
             dc_bboxes.append(gt_anno['bbox'][i])
     for i in range(num_dt):
-        if dt_anno['name'][i].lower() == current_cls_name:
-            valid_class = 1
-        else:
-            valid_class = -1
+        valid_class = 1 if dt_anno['name'][i].lower() == current_cls_name else -1
         height = abs(dt_anno['bbox'][i, 3] - dt_anno['bbox'][i, 1])
         if height < _min_height[difficulty]:
             ignored_dt.append(1)
@@ -327,7 +324,7 @@ def compute_statistics_jit(overlaps, gt_datas, dt_datas, ignored_gt, ignored_det
                 for j in range(det_size):
                     if assigned_detection[j]:
                         continue
-                    if ignored_det[j] == -1 or ignored_det[j] == 1:
+                    if ignored_det[j] in [-1, 1]:
                         continue
                     if ignored_threshold[j]:
                         continue
@@ -339,10 +336,7 @@ def compute_statistics_jit(overlaps, gt_datas, dt_datas, ignored_gt, ignored_det
             tmp = np.zeros((fp + delta_idx, ))
             for i in range(delta_idx):
                 tmp[i + fp] = (1.0 + np.cos(delta[i])) / 2.0
-            if tp > 0 or fp > 0:
-                similarity = np.sum(tmp)
-            else:
-                similarity = -1
+            similarity = np.sum(tmp) if tp > 0 or fp > 0 else -1
     return tp, fp, fn, similarity, thresholds[:thresh_idx]
 
 
@@ -354,10 +348,7 @@ def get_thresholds(scores: np.ndarray, num_gt, num_sample_pts=41):
     thresholds = []
     for i, score in enumerate(scores):
         l_recall = (i + 1) / num_gt
-        if i < (len(scores) - 1):
-            r_recall = (i + 2) / num_gt
-        else:
-            r_recall = l_recall
+        r_recall = (i + 2) / num_gt if i < (len(scores) - 1) else l_recall
         if (((r_recall - current_recall) < (current_recall - l_recall))
                 and (i < (len(scores) - 1))):
             continue
@@ -464,18 +455,31 @@ def eval_class(gt_annos, dt_annos, current_classes, difficulties, metric, min_ov
                     if compute_aos:
                         aos[m, l, k, i] = np.max(aos[m, l, k, i:], axis=-1)
 
-    ret_dict = {'precision': precision, 'orientation': aos, 'thresholds': all_thresholds, 'min_overlaps': min_overlaps}
-    return ret_dict
+    return {
+        'precision': precision,
+        'orientation': aos,
+        'thresholds': all_thresholds,
+        'min_overlaps': min_overlaps,
+    }
 
 
 def do_eval(gt_annos, dt_annos, current_classes, min_overlaps, compute_aos=False, difficulties=(0, 1, 2),
             z_axis=1, z_center=1.0):
     types = ['bbox', 'bev', '3d']
-    metrics = {}
-    for i in range(3):
-        metrics[types[i]] = eval_class(gt_annos, dt_annos, current_classes, difficulties, i, min_overlaps, compute_aos,
-                                       z_axis=z_axis, z_center=z_center)
-    return metrics
+    return {
+        types[i]: eval_class(
+            gt_annos,
+            dt_annos,
+            current_classes,
+            difficulties,
+            i,
+            min_overlaps,
+            compute_aos,
+            z_axis=z_axis,
+            z_center=z_center,
+        )
+        for i in range(3)
+    }
 
 
 def print_str(value, *arg, sstream=None):

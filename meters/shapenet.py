@@ -34,8 +34,10 @@ class MeterShapeNet:
         part_class_to_shape_part_classes = []
         for shape_name, shape_part_classes in self.shape_name_to_part_classes.items():
             start_class, end_class = shape_part_classes[0], shape_part_classes[-1] + 1
-            for _ in range(start_class, end_class):
-                part_class_to_shape_part_classes.append((start_class, end_class))
+            part_class_to_shape_part_classes.extend(
+                (start_class, end_class) for _ in range(start_class, end_class)
+            )
+
         self.part_class_to_shape_part_classes = part_class_to_shape_part_classes
         self.reset()
 
@@ -55,10 +57,7 @@ class MeterShapeNet:
                 iprediction = (prediction == i)
                 union = torch.sum(itarget | iprediction).item()
                 intersection = torch.sum(itarget & iprediction).item()
-                if union == 0:
-                    iou += 1.0
-                else:
-                    iou += intersection / union
+                iou += 1.0 if union == 0 else intersection / union
             iou /= (end_class - start_class)
             self.iou_sum += iou
             self.shape_count += 1

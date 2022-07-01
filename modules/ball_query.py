@@ -30,5 +30,4 @@ class BallQuery(nn.Module):
         return neighbor_features
 
     def extra_repr(self):
-        return 'radius={}, num_neighbors={}{}'.format(
-            self.radius, self.num_neighbors, ', include coordinates' if self.include_coordinates else '')
+        return f"radius={self.radius}, num_neighbors={self.num_neighbors}{', include coordinates' if self.include_coordinates else ''}"

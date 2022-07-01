@@ -16,10 +16,7 @@ class FrustumKitti(dict):
         if class_name_to_size_template_id is None:
             class_name_to_size_template_id = {cat: cls for cls, cat in enumerate(kitti.class_names)}
         if not isinstance(split, (list, tuple)):
-            if split is None:
-                split = ['train', 'val']
-            else:
-                split = [split]
+            split = ['train', 'val'] if split is None else [split]
         if 'train' in split:
             self['train'] = _FrustumKittiDataset(
                 root=root, num_points=num_points, split='train', classes=classes,
@@ -126,12 +123,10 @@ class _FrustumKittiDataset(Dataset):
             heading_angle -= rotation_angle
 
         # Data Augmentation
-        if self.random_flip:
-            # note: rotation_angle won't be correct if we have random_flip so do not use it in case of random flipping
-            if np.random.random() > 0.5:  # 50% chance flipping
-                point_cloud[:, 0] = -point_cloud[:, 0]
-                center[0] = -center[0]
-                heading_angle = np.pi - heading_angle
+        if self.random_flip and np.random.random() > 0.5:
+            point_cloud[:, 0] = -point_cloud[:, 0]
+            center[0] = -center[0]
+            heading_angle = np.pi - heading_angle
         if self.random_shift:
             dist = np.sqrt(np.sum(center[0] ** 2 + center[1] ** 2))
             shift = np.clip(np.random.randn() * dist * 0.05, dist * 0.8, dist * 1.2)

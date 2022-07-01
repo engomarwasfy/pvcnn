@@ -30,8 +30,7 @@ class Transformer(nn.Module):
         transform_weight = self.tranformer(torch.max(self.features(inputs), dim=-1, keepdim=False).values)
         transform_weight = transform_weight.view(-1, self.channels, self.channels)
         transform_weight = transform_weight + torch.eye(self.channels, device=transform_weight.device)
-        outputs = torch.bmm(transform_weight, inputs)
-        return outputs
+        return torch.bmm(transform_weight, inputs)
 
 
 class PointNet(nn.Module):

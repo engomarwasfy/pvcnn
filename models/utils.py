@@ -15,10 +15,7 @@ def _linear_bn_relu(in_channels, out_channels):
 def create_mlp_components(in_channels, out_channels, classifier=False, dim=2, width_multiplier=1):
     r = width_multiplier
 
-    if dim == 1:
-        block = _linear_bn_relu
-    else:
-        block = SharedMLP
+    block = _linear_bn_relu if dim == 1 else SharedMLP
     if not isinstance(out_channels, (list, tuple)):
         out_channels = [out_channels]
     if len(out_channels) == 0 or (len(out_channels) == 1 and out_channels[0] is None):
@@ -37,11 +34,10 @@ def create_mlp_components(in_channels, out_channels, classifier=False, dim=2, wi
             layers.append(nn.Linear(in_channels, out_channels[-1]))
         else:
             layers.append(_linear_bn_relu(in_channels, int(r * out_channels[-1])))
+    elif classifier:
+        layers.append(nn.Conv1d(in_channels, out_channels[-1], 1))
     else:
-        if classifier:
-            layers.append(nn.Conv1d(in_channels, out_channels[-1], 1))
-        else:
-            layers.append(SharedMLP(in_channels, int(r * out_channels[-1])))
+        layers.append(SharedMLP(in_channels, int(r * out_channels[-1])))
     return layers, out_channels[-1] if classifier else int(r * out_channels[-1])
 
 

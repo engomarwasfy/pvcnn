@@ -25,19 +25,19 @@ class _ShapeNetDataset(Dataset):
                 shape_name, shape_dir = line.strip().split()
                 shape_dir_to_shape_id[shape_dir] = shape_id
         file_paths = []
-        if self.split == 'train':
-            split = ['train', 'val']
-        else:
-            split = ['test']
+        split = ['train', 'val'] if self.split == 'train' else ['test']
         for s in split:
             with open(os.path.join(self.root, 'train_test_split', f'shuffled_{s}_file_list.json'), 'r') as f:
                 file_list = json.load(f)
                 for file_path in file_list:
                     _, shape_dir, filename = file_path.split('/')
                     file_paths.append(
-                        (os.path.join(self.root, shape_dir, filename + '.txt'),
-                         shape_dir_to_shape_id[shape_dir])
+                        (
+                            os.path.join(self.root, shape_dir, f'{filename}.txt'),
+                            shape_dir_to_shape_id[shape_dir],
+                        )
                     )
+
         self.file_paths = file_paths
         self.num_shapes = 16
         self.num_classes = 50
@@ -71,13 +71,12 @@ class _ShapeNetDataset(Dataset):
                 point_set = np.concatenate([coords, normal, shape_one_hot])
             else:
                 point_set = np.concatenate([coords, normal])
+        elif self.with_one_hot_shape_id:
+            shape_one_hot = np.zeros((self.num_shapes, self.num_points), dtype=np.float32)
+            shape_one_hot[shape_id, :] = 1.0
+            point_set = np.concatenate([coords, shape_one_hot])
         else:
-            if self.with_one_hot_shape_id:
-                shape_one_hot = np.zeros((self.num_shapes, self.num_points), dtype=np.float32)
-                shape_one_hot[shape_id, :] = 1.0
-                point_set = np.concatenate([coords, shape_one_hot])
-            else:
-                point_set = coords
+            point_set = coords
         return point_set, label[choice].transpose()
 
     def __len__(self):

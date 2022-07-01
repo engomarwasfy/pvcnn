@@ -38,10 +38,7 @@ class MeterS3DIS:
             accuracy = 0
             for i in range(self.num_classes):
                 total_seen = self.total_seen[i]
-                if total_seen == 0:
-                    accuracy += 1
-                else:
-                    accuracy += self.total_correct[i] / total_seen
+                accuracy += 1 if total_seen == 0 else self.total_correct[i] / total_seen
             return accuracy / self.num_classes
         elif self.metric == 'iou':
             iou = 0
