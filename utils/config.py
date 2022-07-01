@@ -14,11 +14,11 @@ class Config(G):
         super().__init__(**kwargs)
 
         if func is not None and not callable(func):
-            raise TypeError('func "{}" is not a callable function or class'.format(repr(func)))
+            raise TypeError(f'func "{repr(func)}" is not a callable function or class')
         if args is not None and not isinstance(args, (collections.Sequence, collections.UserList)):
-            raise TypeError('args "{}" is not an iterable tuple or list'.format(repr(args)))
+            raise TypeError(f'args "{repr(args)}" is not an iterable tuple or list')
         if keys is not None and not isinstance(keys, (collections.Sequence, collections.UserList)):
-            raise TypeError('keys "{}" is not an iterable tuple or list'.format(repr(keys)))
+            raise TypeError(f'keys "{repr(keys)}" is not an iterable tuple or list')
         self.__dict__['_func_'] = func
         self.__dict__['_args_'] = args
         self.__dict__['_detach_'] = detach
@@ -68,11 +68,11 @@ class Config(G):
             text += ' ' * indent + '[func] = ' + str(self._func_)
             extra = False
             if self._detach_:
-                text += ' (detach=' + str(self._detach_)
+                text += f' (detach={str(self._detach_)}'
                 extra = True
             if self._keys_:
                 text += ', ' if extra else ' ('
-                text += 'keys=' + str(self._keys_)
+                text += f'keys={str(self._keys_)}'
                 extra = True
             text += ')\n' if extra else '\n'
             if self._args_:
@@ -84,7 +84,7 @@ class Config(G):
             if isinstance(v, Config):
                 text += '\n' + v.__str__(indent + 2)
             else:
-                text += ' = ' + str(v)
+                text += f' = {str(v)}'
             text += '\n'
 
         while text and text[-1] == '\n':
@@ -99,9 +99,9 @@ class Config(G):
         items = []
         if self._func_ is not None and self._args_:
             items += [repr(v) for v in self._args_]
-        items += [str(k) + '=' + repr(v) for k, v in self.items()]
+        items += [f'{str(k)}={repr(v)}' for k, v in self.items()]
         if self._func_ is not None and self._detach_:
-            items += ['detach=' + repr(self._detach_)]
+            items += [f'detach={repr(self._detach_)}']
 
         text += '(' + ', '.join(items) + ')'
         return text

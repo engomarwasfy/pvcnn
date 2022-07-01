@@ -86,11 +86,10 @@ def convex_hull_intersection(p1, pt):
         a list of (x,y) for the intersection and its volume
     """
     inter_p = polygon_clip(p1, pt)
-    if inter_p is not None:
-        hull_inter = ConvexHull(inter_p)
-        return inter_p, hull_inter.volume
-    else:
+    if inter_p is None:
         return None, 0.0
+    hull_inter = ConvexHull(inter_p)
+    return inter_p, hull_inter.volume
 
 
 @numba.njit()
@@ -120,7 +119,6 @@ def get_box_iou_3d(corners_1, corners_t):
         iou_2d = np.zeros(batch_size)
         for b in range(batch_size):
             iou_3d[b], iou_2d[b] = get_box_iou_3d(corners_1[b], corners_t[b])
-        return iou_3d, iou_2d
     else:
         # corner points are in counter clockwise order
         corners_1_upper_xz = [(corners_1[0, 3], corners_1[2, 3]), (corners_1[0, 2], corners_1[2, 2]),
@@ -137,4 +135,5 @@ def get_box_iou_3d(corners_1, corners_t):
         vol1 = box_volume_3d(corners_1)
         vol2 = box_volume_3d(corners_t)
         iou_3d = inter_vol / (vol1 + vol2 - inter_vol)
-        return iou_3d, iou_2d
+
+    return iou_3d, iou_2d

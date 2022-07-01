@@ -50,7 +50,7 @@ def prepare():
                 if m not in metrics:
                     metrics.append(m)
         configs.train.metrics = metrics
-        configs.train.metric = None if len(metrics) == 0 else metrics[0]
+        configs.train.metric = metrics[0] if metrics else None
 
         save_path = configs.train.save_path
         configs.train.checkpoint_path = os.path.join(save_path, 'latest.pth.tar')
@@ -58,18 +58,25 @@ def prepare():
         configs.train.best_checkpoint_path = os.path.join(save_path, 'best.pth.tar')
         best_checkpoints_dir = os.path.join(save_path, 'best')
         configs.train.best_checkpoint_paths = {
-            m: os.path.join(best_checkpoints_dir, 'best.{}.pth.tar'.format(m.replace('/', '.')))
+            m: os.path.join(
+                best_checkpoints_dir, f"best.{m.replace('/', '.')}.pth.tar"
+            )
             for m in configs.train.metrics
         }
+
         os.makedirs(os.path.dirname(configs.train.checkpoints_path), exist_ok=True)
         os.makedirs(best_checkpoints_dir, exist_ok=True)
         if configs.train.deep_mutual_learning:
             configs.train.best_student_checkpoint_path = os.path.join(save_path, 'best_student.pth.tar')
             best_student_checkpoints_dir = os.path.join(save_path, 'best_student')
             configs.train.best_student_checkpoint_paths = {
-                m: os.path.join(best_student_checkpoints_dir, 'best.{}.pth.tar'.format(m.replace('/', '.')))
+                m: os.path.join(
+                    best_student_checkpoints_dir,
+                    f"best.{m.replace('/', '.')}.pth.tar",
+                )
                 for m in configs.train.metrics
             }
+
             os.makedirs(best_student_checkpoints_dir, exist_ok=True)
     else:
         if 'best_checkpoint_path' not in configs.evaluate or configs.evaluate.best_checkpoint_path is None:
@@ -142,9 +149,10 @@ def main():
 
     # evaluate kernel
     def evaluate(model, loader, split='test'):
-        meters = {}
-        for k, meter in configs.train.meters.items():
-            meters[k.format(split)] = meter()
+        meters = {
+            k.format(split): meter() for k, meter in configs.train.meters.items()
+        }
+
         model.eval()
         with torch.no_grad():
             for inputs, targets in tqdm(loader, desc=split, ncols=0):

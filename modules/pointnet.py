@@ -34,13 +34,13 @@ class PointNetAModule(nn.Module):
         if self.include_coordinates:
             features = torch.cat([features, coords], dim=1)
         coords = torch.zeros((coords.size(0), 3, 1), device=coords.device)
-        if len(self.mlps) > 1:
-            features_list = []
-            for mlp in self.mlps:
-                features_list.append(mlp(features).max(dim=-1, keepdim=True).values)
-            return torch.cat(features_list, dim=1), coords
-        else:
+        if len(self.mlps) <= 1:
             return self.mlps[0](features).max(dim=-1, keepdim=True).values, coords
+        features_list = [
+            mlp(features).max(dim=-1, keepdim=True).values for mlp in self.mlps
+        ]
+
+        return torch.cat(features_list, dim=1), coords
 
     def extra_repr(self):
         return f'out_channels={self.out_channels}, include_coordinates={self.include_coordinates}'
@@ -80,9 +80,11 @@ class PointNetSAModule(nn.Module):
     def forward(self, inputs):
         features, coords = inputs
         centers_coords = F.furthest_point_sample(coords, self.num_centers)
-        features_list = []
-        for grouper, mlp in zip(self.groupers, self.mlps):
-            features_list.append(mlp(grouper(coords, centers_coords, features)).max(dim=-1).values)
+        features_list = [
+            mlp(grouper(coords, centers_coords, features)).max(dim=-1).values
+            for grouper, mlp in zip(self.groupers, self.mlps)
+        ]
+
         if len(features_list) > 1:
             return torch.cat(features_list, dim=1), centers_coords
         else:

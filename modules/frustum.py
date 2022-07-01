@@ -78,15 +78,15 @@ class FrustumPointNetLoss(nn.Module):
         corners_loss = PF.huber_loss(torch.min(
             torch.norm(corners - corners_target, dim=1), torch.norm(corners - corners_target_flip, dim=1)
         ), delta=1.0)
-        # Summing up
-        loss = mask_loss + self.box_loss_weight * (
-                center_loss + center_reg_loss + heading_loss + size_loss
-                + self.heading_residual_loss_weight * heading_residual_normalized_loss
-                + self.size_residual_loss_weight * size_residual_normalized_loss
-                + self.corners_loss_weight * corners_loss
+        return mask_loss + self.box_loss_weight * (
+            center_loss
+            + center_reg_loss
+            + heading_loss
+            + size_loss
+            + self.heading_residual_loss_weight * heading_residual_normalized_loss
+            + self.size_residual_loss_weight * size_residual_normalized_loss
+            + self.corners_loss_weight * corners_loss
         )
-
-        return loss
 
 
 def get_box_corners_3d(centers, headings, sizes, with_flip=False):

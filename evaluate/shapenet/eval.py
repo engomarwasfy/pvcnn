@@ -104,14 +104,13 @@ def evaluate(configs=None):
         model = torch.nn.DataParallel(model)
     model = model.to(configs.device)
 
-    if os.path.exists(configs.evaluate.best_checkpoint_path):
-        print(f'==> loading checkpoint "{configs.evaluate.best_checkpoint_path}"')
-        checkpoint = torch.load(configs.evaluate.best_checkpoint_path)
-        model.load_state_dict(checkpoint.pop('model'))
-        del checkpoint
-    else:
+    if not os.path.exists(configs.evaluate.best_checkpoint_path):
         return
 
+    print(f'==> loading checkpoint "{configs.evaluate.best_checkpoint_path}"')
+    checkpoint = torch.load(configs.evaluate.best_checkpoint_path)
+    model.load_state_dict(checkpoint.pop('model'))
+    del checkpoint
     model.eval()
 
     ##############
@@ -120,7 +119,7 @@ def evaluate(configs=None):
 
     stats = np.zeros((configs.data.num_shapes, 2))
 
-    for shape_index, (file_path, shape_id) in enumerate(tqdm(dataset.file_paths, desc='eval', ncols=0)):
+    for file_path, shape_id in tqdm(dataset.file_paths, desc='eval', ncols=0):
         data = np.loadtxt(file_path).astype(np.float32)
         total_num_points_in_shape = data.shape[0]
         confidences = np.zeros(total_num_points_in_shape, dtype=np.float32)
@@ -139,13 +138,12 @@ def evaluate(configs=None):
                 point_set = np.concatenate([coords, normal, shape_one_hot])
             else:
                 point_set = np.concatenate([coords, normal])
+        elif dataset.with_one_hot_shape_id:
+            shape_one_hot = np.zeros((dataset.num_shapes, coords.shape[-1]), dtype=np.float32)
+            shape_one_hot[shape_id, :] = 1.0
+            point_set = np.concatenate([coords, shape_one_hot])
         else:
-            if dataset.with_one_hot_shape_id:
-                shape_one_hot = np.zeros((dataset.num_shapes, coords.shape[-1]), dtype=np.float32)
-                shape_one_hot[shape_id, :] = 1.0
-                point_set = np.concatenate([coords, shape_one_hot])
-            else:
-                point_set = coords
+            point_set = coords
         extra_batch_size = configs.evaluate.num_votes * math.ceil(total_num_points_in_shape / dataset.num_points)
         total_num_voted_points = extra_batch_size * dataset.num_points
         num_repeats = math.ceil(total_num_voted_points / total_num_points_in_shape)
@@ -192,10 +190,7 @@ def update_stats(stats, ground_truth, predictions, shape_id, start_class, end_cl
         ipd = (predictions == i)
         union = np.sum(igt | ipd)
         intersection = np.sum(igt & ipd)
-        if union == 0:
-            iou += 1
-        else:
-            iou += intersection / union
+        iou += 1 if union == 0 else intersection / union
     iou /= (end_class - start_class)
     stats[shape_id][0] += iou
     stats[shape_id][1] += 1

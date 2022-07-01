@@ -70,8 +70,8 @@ def prepare_label(data_dir, output_dir):
             xyz_room = np.delete(xyz_room, [0], 0)
             label_room = np.delete(label_room, [0], 0)
 
-            np.save(path_prepare_label + '/xyzrgb.npy', xyz_room)
-            np.save(path_prepare_label + '/label.npy', label_room)
+            np.save(f'{path_prepare_label}/xyzrgb.npy', xyz_room)
+            np.save(f'{path_prepare_label}/label.npy', label_room)
 
             # Marker indicating we've processed this room
             open(os.path.join(path_prepare_label, '.labels'), 'w').close()

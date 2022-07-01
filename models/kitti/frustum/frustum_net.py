@@ -53,9 +53,11 @@ class FrustumNet(nn.Module):
                                         self.num_size_templates, self.num_size_templates * 3], dim=-1)
 
         # parse results
-        outputs = dict()
-        outputs['mask_logits'] = mask_logits
-        outputs['center_reg'] = foreground_coords_mean + delta_coords
+        outputs = {
+            'mask_logits': mask_logits,
+            'center_reg': foreground_coords_mean + delta_coords,
+        }
+
         outputs['center'] = estimations[0] + outputs['center_reg']
         outputs['heading_scores'] = estimations[1]
         outputs['heading_residuals_normalized'] = estimations[2]
